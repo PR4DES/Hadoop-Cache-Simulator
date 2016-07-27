@@ -108,7 +108,8 @@ class Application {
 		int rack_local_avg_map_time;
 		int avg_reduce_time;
 	public:
-		Application();
+		Application(int appidx, string appname, int fileidx, int mapnum, int reducenum, int skipcount, int skipthreshold,\
+		int cachetime, int datatime, int racktime, int reducetime);
 };
 
 struct CompareApps {
@@ -123,6 +124,7 @@ class ResourceManager {
 		priority_queue<Application, vector<Application>, CompareApps> job_queue;
 	public:
 		void DelayScheduling();
+		void AddJob(Application app);
 };
 
 // Data class implementation
@@ -184,9 +186,30 @@ Container::Container() {
 	is_working = false;
 }
 // Application class implementation
+Application::Application(int appidx, string appname, int fileidx, int mapnum, int reducenum, int skipcount, int skipthreshold,\
+		int cachetime, int datatime, int racktime, int reducetime) {
+	app_idx = appidx;
+	app_name = appname;
+	file_idx = fileidx;
+	mapper_num = mapnum;
+	reducer_num = reducenum;
+	skip_count = skipcount;
+	skip_threshold = skipthreshold;
+	cache_local_avg_map_time = cachetime;
+	data_local_avg_map_time = datatime;
+	rack_local_avg_map_time = racktime;
+	avg_reduce_time = reducetime;
+}
 
 // Resource Manager class implementation
+void ResourceManager::DelayScheduling() {
 
+}
+void ResourceManager::AddJob(Application app) {
+	job_queue.push(app);
+}
+
+// Here is main :)
 int main() {
 	srand((unsigned int)time(NULL));
 
@@ -214,6 +237,11 @@ int main() {
 
 		i++;
 	}
+
+	// 3. Job setting
+	ResourceManager();
+	string app_name;
+	int app_idx, file_idx, mapper_num, reducer_num, skip_count, skip_threshold, cache_time, data_time, rack_time, reduce_time;
 
 	return 0;
 }
