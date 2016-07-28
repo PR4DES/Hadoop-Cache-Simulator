@@ -18,7 +18,7 @@ class Application;
 
 int main_time = 0;
 
-// Data class : Block of file, declared in File class
+// Data class
 class Data {
 	friend class File;
 	friend class NameNode;
@@ -29,7 +29,6 @@ class Data {
 		bool is_cached;
 	public:
 		Data();
-		int GetFileIdx();
 		int GetDataIdx();
 		int GetNodePosition();
 		bool IsCached();
@@ -107,31 +106,32 @@ class Application {
 		int data_local_avg_map_time;
 		int rack_local_avg_map_time;
 		int avg_reduce_time;
+		int occupied_container;
 	public:
-		Application(int appidx, string appname, int fileidx, int mapnum, int reducenum, int skipcount, int skipthreshold,\
-		int cachetime, int datatime, int racktime, int reducetime);
+		Application(int appidx, string appname, int fileidx, int reducenum, int skipcount, int skipthreshold,\
+		int cachetime, int datatime, int racktime, int reducetime, NameNode namenode);
 };
 
 struct CompareApps {
-	bool operator()(Application const& a1, Application const& a2)  {
-		return a1.mapper_num > a2.mapper_num;
+	bool operator()(Application const *a1, Application const *a2)  {
+		return a1->occupied_container > a2->occupied_container;
 	}
 };
 
 // Resource Manager class
 class ResourceManager {
-	private:
-		priority_queue<Application, vector<Application>, CompareApps> job_queue;
+//	private:
 	public:
+		priority_queue<Application*, vector<Application*>, CompareApps> job_queue;
+//	public:
 		void DelayScheduling();
-		void AddJob(Application app);
+		void AddJob(Application *app);
 };
 
 // Data class implementation
 Data::Data() {
 	is_cached = false;
 }
-int Data::GetFileIdx() { return file_idx; }
 int Data::GetDataIdx() { return data_idx; }
 int Data::GetNodePosition() { return node_position; }
 bool Data::IsCached() { return is_cached; }
@@ -186,12 +186,12 @@ Container::Container() {
 	is_working = false;
 }
 // Application class implementation
-Application::Application(int appidx, string appname, int fileidx, int mapnum, int reducenum, int skipcount, int skipthreshold,\
-		int cachetime, int datatime, int racktime, int reducetime) {
+Application::Application(int appidx, string appname, int fileidx, int reducenum, int skipcount, int skipthreshold,\
+		int cachetime, int datatime, int racktime, int reducetime, NameNode namenode) {
 	app_idx = appidx;
 	app_name = appname;
 	file_idx = fileidx;
-	mapper_num = mapnum;
+	mapper_num = namenode.files[file_idx]->GetFileSize();
 	reducer_num = reducenum;
 	skip_count = skipcount;
 	skip_threshold = skipthreshold;
@@ -199,13 +199,14 @@ Application::Application(int appidx, string appname, int fileidx, int mapnum, in
 	data_local_avg_map_time = datatime;
 	rack_local_avg_map_time = racktime;
 	avg_reduce_time = reducetime;
+	occupied_container = 0;
 }
 
 // Resource Manager class implementation
 void ResourceManager::DelayScheduling() {
 
 }
-void ResourceManager::AddJob(Application app) {
+void ResourceManager::AddJob(Application *app) {
 	job_queue.push(app);
 }
 
@@ -231,7 +232,7 @@ int main() {
 	while(1) {
 		cin >> file_size;
 		if(file_size == -1) break;
-		
+
 		File* f = new File(i, file_size, node_num);
 		namenode.AddFile(f);
 
@@ -239,9 +240,32 @@ int main() {
 	}
 
 	// 3. Job setting
-	ResourceManager();
+	ResourceManager resourcemanage;
+	int app_idx = 0;
 	string app_name;
-	int app_idx, file_idx, mapper_num, reducer_num, skip_count, skip_threshold, cache_time, data_time, rack_time, reduce_time;
+	int file_idx, reduce_num, skip_count, skip_threshold, cache_time, data_time, rack_time, reduce_time;
+	cout << "Put inputs in this order: index of file, name of job, number of reducer, skip count, skip threshold, average time for cache local, data local, rack local, reduce.\n";
+	cout << "If it is done then put -1\n";
+	while(1) {
+		cin >> file_idx;
+		cout << file_idx << endl;
+		if(file_idx == -1) break;
+		cin >> app_name >> reduce_num >> skip_count >> skip_threshold >> cache_time >> data_time >> rack_time >> reduce_time;
+
+		if(file_idx >= namenode.GetFileNum()) {
+			cout << "wrong input : file index is larger than number of existing file!\n";
+			continue;
+		}
+		Application* app = new Application(app_idx, app_name, file_idx, reduce_num, skip_count, skip_threshold, cache_time, data_time, rack_time, reduce_time, namenode);
+		resourcemanage.AddJob(app);
+
+		app_idx++;
+	}
+
+	// 4. Main Task Start
+	while(1) {
+		break;
+	}
 
 	return 0;
 }
