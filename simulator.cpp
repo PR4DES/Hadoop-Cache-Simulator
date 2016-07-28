@@ -73,9 +73,10 @@ class Node {
 		Container *containers;
 	public:
 		Node(int nodeidx, int cachesize, int containernum);
+		Container GetContainer(int containeridx);
 };
 
-// Container class : declared in Node class
+// Container class
 class Container {
 	friend class Node;
 	friend class NameNode;
@@ -88,17 +89,19 @@ class Container {
 		bool is_working;
 	public:
 		Container();
+		bool GetIsWorking();
 };
 
 // Application class
 class Application {
 	friend class ResourceManager;
 	friend struct CompareApps;
+	friend class Container;
 	private:
 		int app_idx;
 		string app_name;
 		int file_idx;		// index of file needed for this application
-		int mapper_num;	// == # of blocks
+		int mapper_num;	// == # of blocks == # of tasks
 		int reducer_num;
 		int skip_count;
 		int skip_threshold;
@@ -107,6 +110,9 @@ class Application {
 		int rack_local_avg_map_time;
 		int avg_reduce_time;
 		int occupied_container;
+		// when all boolean are true and completed task number is same as mapper number then this job is done.
+		bool *is_task_working;	// when each task start, it become true
+		int completed_task_num;
 	public:
 		Application(int appidx, string appname, int fileidx, int reducenum, int skipcount, int skipthreshold,\
 		int cachetime, int datatime, int racktime, int reducetime, NameNode namenode);
@@ -124,7 +130,8 @@ class ResourceManager {
 	public:
 		priority_queue<Application*, vector<Application*>, CompareApps> job_queue;
 //	public:
-		void DelayScheduling();
+		void DelayScheduling(NameNode namenode, Node* node, int containernum);
+		void JobCompleteManager(NameNode namenode, Node* nodes[]);
 		void AddJob(Application *app);
 };
 
@@ -180,11 +187,16 @@ Node::Node(int nodeidx, int cachesize, int containernum) {
 	container_num = containernum;
 	containers = new Container[container_num];
 }
+Container Node::GetContainer(int containeridx) {
+	return containers[containeridx];
+}
 
 // Container class implementation
 Container::Container() {
 	is_working = false;
 }
+bool Container::GetIsWorking() { return is_working; }
+
 // Application class implementation
 Application::Application(int appidx, string appname, int fileidx, int reducenum, int skipcount, int skipthreshold,\
 		int cachetime, int datatime, int racktime, int reducetime, NameNode namenode) {
@@ -200,10 +212,26 @@ Application::Application(int appidx, string appname, int fileidx, int reducenum,
 	rack_local_avg_map_time = racktime;
 	avg_reduce_time = reducetime;
 	occupied_container = 0;
+	is_task_working = new bool[mapper_num];
+	for(int i=0; i<mapper_num; i++) {
+		is_task_working = false;
+	}
+	completed_task_num = 0;
 }
 
 // Resource Manager class implementation
-void ResourceManager::DelayScheduling() {
+void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int containernum) {
+	for(int i=0; i<job_queue.top()->mapper_num; i++) {
+		for(int j=0; j<3; j++) {
+			if(node->node_idx == namenode.files[job_queue.top()->file_idx]->GetData(i, j).GetNodePosition() && !job_queue.top()->is_task_working[i]) {
+				cout << "여기 노드에 잡이 원하는 데이터가 숨어있다!\n";
+
+			}
+		}
+	}
+	//if(job_queue.top()->skip_count < job_queue.top()->skip_threshold) { }
+}
+void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 
 }
 void ResourceManager::AddJob(Application *app) {
@@ -248,7 +276,6 @@ int main() {
 	cout << "If it is done then put -1\n";
 	while(1) {
 		cin >> file_idx;
-		cout << file_idx << endl;
 		if(file_idx == -1) break;
 		cin >> app_name >> reduce_num >> skip_count >> skip_threshold >> cache_time >> data_time >> rack_time >> reduce_time;
 
@@ -264,7 +291,16 @@ int main() {
 
 	// 4. Main Task Start
 	while(1) {
-		break;
+		// scan
+		for(int i=0; i<node_num; i++) {
+			for(int j=0; j<container_num; j++) {
+				if(!nodes[i]->GetContainer(j).GetIsWorking()) {
+					resourcemanage.DelayScheduling(namenode, nodes[i], j);
+				}
+			}
+		}
+		break; // ^.^
+		main_time++;
 	}
 
 	return 0;
