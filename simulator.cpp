@@ -239,7 +239,7 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 		if(!job_queue.top()->is_task_working[i]) {
 			for(int j=0; j<3; j++) {
 				if(node->node_idx == namenode.files[job_queue.top()->file_idx]->GetData(i, j).GetNodePosition()) {
-					// 캐시 로컬인지 데이터 로컬인지 판단
+					// here : cache local implementation!
 					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->data_local_avg_map_time);
 					job_queue.top()->occupied_container++;
 					job_queue.top()->skip_count = 0;
@@ -247,20 +247,20 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 					job_queue.push(job_queue.top());
 					job_queue.pop();
 					return;
-				} else {
-					if(job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
-						cout << "over skipthreshold!" << endl;
-						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
-						job_queue.top()->occupied_container++;
-						job_queue.top()->skip_count = 0;
-						job_queue.push(job_queue.top());
-						job_queue.pop();
-						return;
-					}
+				} else if(job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
+					//Over the skip threshold
+					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
+					job_queue.top()->occupied_container++;
+					job_queue.top()->skip_count = 0;
+
+					job_queue.push(job_queue.top());
+					job_queue.pop();
+					return;
 				}
 			}
 		}
 	}
+	//Delay scheduling
 	job_queue.top()->skip_count++;
 	Application* temp = job_queue.top();
 	if(!job_queue.empty()) {
@@ -274,6 +274,7 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 				node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
 				job_queue.top()->occupied_container++;
 				job_queue.top()->skip_count = 0;
+			
 				job_queue.push(job_queue.top());
 				job_queue.pop();
 				return;
