@@ -24,29 +24,29 @@ class Data {
 	friend class File;
 	friend class NameNode;
 	private:
-		int file_idx;			// index of file where this data located
-		int data_idx;			// index of this data in the file
-		int node_position;	// index of node where this data located
-		bool is_cached;
+	int file_idx;			// index of file where this data located
+	int data_idx;			// index of this data in the file
+	int node_position;	// index of node where this data located
+	bool is_cached;
 	public:
-		Data();
-		int GetDataIdx();
-		int GetNodePosition();
-		bool IsCached();
+	Data();
+	int GetDataIdx();
+	int GetNodePosition();
+	bool IsCached();
 };
 
 // File class
 class File {
 	friend class NameNode;
 	private:
-		int file_idx;			// index of file
-		int file_size;			// number of data blocks
-		Data **datas;
+	int file_idx;			// index of file
+	int file_size;			// number of data blocks
+	Data **datas;
 	public:
-		File(int fileidx, int filesize, int nodenum);
-		int GetFileIdx();
-		int GetFileSize();
-		Data GetData(int dataidx, int order); // maximum 3 order (becasue # of replica is 3)
+	File(int fileidx, int filesize, int nodenum);
+	int GetFileIdx();
+	int GetFileSize();
+	Data GetData(int dataidx, int order); // maximum 3 order (becasue # of replica is 3)
 };
 
 // NameNode class
@@ -68,16 +68,16 @@ class Node {
 	friend class NameNode;
 	friend class ResourceManager;
 	private:
-		int node_idx;
-		bool is_fail;
-		int cache_size;
-		int container_num;
-		Container *containers;
-		CacheReplacement *cache_replace;
+	int node_idx;
+	bool is_fail;
+	int cache_size;
+	int container_num;
+	Container *containers;
+	CacheReplacement *cache_replace;
 	public:
-		Node(int nodeidx, int cachesize, int containernum);
-		Container GetContainer(int containeridx);
-		int GetContSize();
+	Node(int nodeidx, int cachesize, int containernum);
+	Container GetContainer(int containeridx);
+	int GetContSize();
 };
 
 // Container class
@@ -86,16 +86,16 @@ class Container {
 	friend class NameNode;
 	friend class ResourceManager;
 	private:
-		int start_time;
-		int end_time;
-		Application *task;
-		int task_idx;
-		bool is_working;
+	int start_time;
+	int end_time;
+	Application *task;
+	int task_idx;
+	bool is_working;
 	public:
-		Container();
-		bool GetIsWorking();
-		void StateChange();
-		void TaskRun(Application *job, int tasknum, int run_time);
+	Container();
+	bool GetIsWorking();
+	void StateChange();
+	void TaskRun(Application *job, int tasknum, int run_time);
 };
 
 // Application class
@@ -104,24 +104,24 @@ class Application {
 	friend struct CompareApps;
 	friend class Container;
 	private:
-		int app_idx;
-		string app_name;
-		int file_idx;		// index of file needed for this application
-		int mapper_num;	// == # of blocks == # of tasks
-		int reducer_num;
-		int skip_count;
-		int skip_threshold;
-		int cache_local_avg_map_time;
-		int data_local_avg_map_time;
-		int rack_local_avg_map_time;
-		int avg_reduce_time;
-		int occupied_container;
-		// when all boolean are true and completed task number is same as mapper number then this job is done.
-		bool *is_task_working;	// when each task start, it become true
-		int completed_task_num;
+	int app_idx;
+	string app_name;
+	int file_idx;		// index of file needed for this application
+	int mapper_num;	// == # of blocks == # of tasks
+	int reducer_num;
+	int skip_count;
+	int skip_threshold;
+	int cache_local_avg_map_time;
+	int data_local_avg_map_time;
+	int rack_local_avg_map_time;
+	int avg_reduce_time;
+	int occupied_container;
+	// when all boolean are true and completed task number is same as mapper number then this job is done.
+	bool *is_task_working;	// when each task start, it become true
+	int completed_task_num;
 	public:
-		Application(int appidx, string appname, int fileidx, int reducenum, int skipthreshold,\
-		int cachetime, int datatime, int racktime, int reducetime, NameNode namenode);
+	Application(int appidx, string appname, int fileidx, int reducenum, int skipthreshold,\
+			int cachetime, int datatime, int racktime, int reducetime, NameNode namenode);
 };
 
 struct CompareApps {
@@ -142,20 +142,19 @@ class ResourceManager {
 		void Show();		// for test print
 		bool IsReducePhase();
 		void ReduceTask(NameNode namenode, Node* node, int countainernum);
-		void JobQueueResort();
 };
 
 // Cache Replacement class
 class CacheReplacement {
 	friend class NameNode;
 	private:
-		Data** cached_datas;
-		int victim;
-		int cached_num;		// number of cached data block
+	Data** cached_datas;
+	int victim;
+	int cached_num;		// number of cached data block
 	public:
-		CacheReplacement(int cachesize);
-		virtual void Add() = 0;
-		virtual void SelectVictim() = 0;
+	CacheReplacement(int cachesize);
+	virtual void Add() = 0;
+	virtual void SelectVictim() = 0;
 };
 
 class Random : public CacheReplacement {
@@ -261,7 +260,6 @@ Application::Application(int appidx, string appname, int fileidx, int reducenum,
 }
 // Resource Manager class implementation
 void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int containernum) {
-	if(job_queue.empty()) return;
 	for(int i=0; i<job_queue.top()->mapper_num; i++) {		//job_queue.top()->mapper_num is file block size
 		if(!job_queue.top()->is_task_working[i]) {
 			for(int j=0; j<3; j++) {
@@ -279,7 +277,6 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 					return;
 				} else if(job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
 					//Over the skip threshold
-					cout << job_queue.top()->app_name << " Skip counter is over." << main_time << endl;
 					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
 					job_queue.top()->occupied_container++;
 					job_queue.top()->skip_count = 0;
@@ -294,72 +291,45 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 	//Delay scheduling
 	job_queue.top()->skip_count++;
 	Application* temp = job_queue.top();
-	job_queue.pop();							//222222222222222222222222222222
-	DelayScheduling(namenode, node, containernum);
-	job_queue.push(temp);
-/*	if(!job_queue.empty()) {
-	//	job_queue.pop();
+	if(!job_queue.empty()) {
+		job_queue.pop();
 		DelayScheduling(namenode, node, containernum);
 		job_queue.push(temp);
 		return;
 	} else {
-		job_queue.push(temp);
 		for(int i=0; i<job_queue.top()->mapper_num; i++) {
 			if(!job_queue.top()->is_task_working[i]) {
 				node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
 				job_queue.top()->occupied_container++;
 				job_queue.top()->skip_count = 0;
-			
+
 				job_queue.push(job_queue.top());
 				job_queue.pop();
 				return;
 			}
 		}
-	}*/
+	}
 }
 void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 	for(int i=0; i<namenode.GetNodeNum(); i++) {
 		for(int j=0; j<nodes[i]->container_num; j++) {
-			if(nodes[i]->containers[j].GetIsWorking() && nodes[i]->containers[j].end_time == main_time) {
+			if(nodes[i]->containers[j].GetIsWorking() && nodes[i]->containers[j].end_time <= main_time) {
 				nodes[i]->containers[j].task->completed_task_num++;
 				nodes[i]->containers[j].is_working = false;
-				// job_queue.top()->occupied_container--;
-				nodes[i]->containers[j].task->occupied_container--;
-				JobQueueResort();
-				//if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num + job_queue.top()->reducer_num) {
-			/*	if(nodes[i]->containers[j].task->completed_task_num >= nodes[i]->containers[j].task->mapper_num + nodes[i]->containers[j].task->reducer_num) {
-					 nodes[i]->containers[j].task->occupied_container = -100;
-					 JobQueueResort();
-					 job_queue.pop();
-					 cout << nodes[i]->containers[j].task->app_name << ", " << nodes[i]->containers[j].task->mapper_num + nodes[i]->containers[j].task->reducer_num << ", main time = " << main_time << endl;
+				job_queue.top()->occupied_container--;
+				job_queue.push(job_queue.top());
+				job_queue.pop();
+				if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num + job_queue.top()->reducer_num) {
+					cout << "###################Job " << job_queue.top()->app_name <<" is done in " << main_time << " second!!##################\n";
+					job_queue.pop();
 					if(job_queue.empty()) {
 						return;
 					}
-				}*/
+				}
 			}
 		}
 	}
-	priority_queue<Application*, vector<Application*>, CompareApps> new_job_queue;
-	while(!job_queue.empty()) {
-		if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num + job_queue.top()->reducer_num) {
-			 cout << " ###################Job " << job_queue.top()->app_name <<" is done in " << main_time << " second!!##################\n";
-			 job_queue.pop();
-		} else {
-			new_job_queue.push(job_queue.top());
-			job_queue.pop();
-		}
-	}
-	while(!new_job_queue.empty()) {
-	   job_queue.push(new_job_queue.top());
-	   new_job_queue.pop();
-	}
-
-
-		
 }
-
-
-
 void ResourceManager::AddJob(Application *app) {
 	job_queue.push(app);
 }
@@ -376,17 +346,6 @@ void ResourceManager::ReduceTask(NameNode namenode, Node* node, int containernum
 	job_queue.push(job_queue.top());
 	job_queue.pop();
 	return;
-}
-void ResourceManager::JobQueueResort() {
-	priority_queue<Application*, vector<Application*>, CompareApps> new_job_queue;
-	while(!job_queue.empty()) {
-		new_job_queue.push(job_queue.top());
-		job_queue.pop();
-	}
-	while(!new_job_queue.empty()) {
-		job_queue.push(new_job_queue.top());
-		new_job_queue.pop();
-	}
 }
 // for test print
 void ResourceManager::Show() {
@@ -469,15 +428,6 @@ int main() {
 			for(int j=0; j<container_num; j++) {
 				if(!nodes[i]->GetContainer(j).GetIsWorking()) {
 					if(resourcemanage.IsReducePhase()) {
-						/*
-						scheduling(
-						cont c = q.top().
-						if ( c.isReduce() 
-							reduce assign()
-						else
-							delaysched()
-							)
-							*/
 						resourcemanage.ReduceTask(namenode, nodes[i], j);
 					} else {
 						resourcemanage.DelayScheduling(namenode, nodes[i], j);
@@ -491,4 +441,3 @@ int main() {
 
 	return 0;
 }
-
