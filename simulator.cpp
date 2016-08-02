@@ -15,6 +15,7 @@ class Node;
 class Container;
 class ResourceManager;
 class Application;
+class CacheReplacement;
 
 int main_time = 0;
 
@@ -72,6 +73,7 @@ class Node {
 		int cache_size;
 		int container_num;
 		Container *containers;
+		CacheReplacement *cache_replace;
 	public:
 		Node(int nodeidx, int cachesize, int containernum);
 		Container GetContainer(int containeridx);
@@ -137,7 +139,29 @@ class ResourceManager {
 		void JobCompleteManager(NameNode namenode, Node* nodes[]);
 		void AddJob(Application *app);
 		bool IsQueueEmpty();
-		void Show();
+		void Show();		// for test print
+		bool IsReducePhase();
+		void ReduceTask(NameNode namenode, Node* node, int countainernum);
+};
+
+// Cache Replacement class
+class CacheReplacement {
+	friend class NameNode;
+	private:
+		Data** cached_datas;
+		int victim;
+		int cached_num;		// number of cached data block
+	public:
+		CacheReplacement(int cachesize);
+		virtual void Add() = 0;
+		virtual void SelectVictim() = 0;
+};
+
+class Random : public CacheReplacement {
+	public:
+		Random(int cachesize);
+		virtual void Add();
+		virtual void SelectVictim();
 };
 
 // Data class implementation
@@ -191,6 +215,7 @@ Node::Node(int nodeidx, int cachesize, int containernum) {
 	cache_size = cachesize;
 	container_num = containernum;
 	containers = new Container[container_num];
+	cache_replace = NULL;
 }
 Container Node::GetContainer(int containeridx) {
 	return containers[containeridx];
@@ -239,8 +264,11 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 		if(!job_queue.top()->is_task_working[i]) {
 			for(int j=0; j<3; j++) {
 				if(node->node_idx == namenode.files[job_queue.top()->file_idx]->GetData(i, j).GetNodePosition()) {
-					// here : cache local implementation!
-					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->data_local_avg_map_time);
+					if(namenode.files[job_queue.top()->file_idx]->GetData(i,j).IsCached()) {
+						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->cache_local_avg_map_time);
+					} else {
+						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->data_local_avg_map_time);
+					}
 					job_queue.top()->occupied_container++;
 					job_queue.top()->skip_count = 0;
 					// resort job queue
@@ -289,11 +317,14 @@ void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 				nodes[i]->containers[j].task->completed_task_num++;
 				nodes[i]->containers[j].is_working = false;
 				job_queue.top()->occupied_container--;
-                                job_queue.push(job_queue.top());
-                                job_queue.pop();
+				job_queue.push(job_queue.top());
+				job_queue.pop();
 				if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num + job_queue.top()->reducer_num) {
-					cout << "###################Job " << job_queue.top()->app_name <<" is done!!##################\n";
+					cout << "###################Job " << job_queue.top()->app_name <<" is done in " << main_time << " second!!##################\n";
 					job_queue.pop();
+					if(job_queue.empty()) {
+						return;
+					}
 				}
 			}
 		}
@@ -305,12 +336,37 @@ void ResourceManager::AddJob(Application *app) {
 bool ResourceManager::IsQueueEmpty() {
 	return job_queue.empty();
 }
+bool ResourceManager::IsReducePhase() {
+	if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num && job_queue.top()->completed_task_num < job_queue.top()->mapper_num + job_queue.top()->reducer_num) return true;
+	return false;
+}
+void ResourceManager::ReduceTask(NameNode namenode, Node* node, int containernum) {
+	node->containers[containernum].TaskRun(job_queue.top(), -1, job_queue.top()->avg_reduce_time);
+	job_queue.top()->occupied_container++;
+	job_queue.push(job_queue.top());
+	job_queue.pop();
+	return;
+}
 // for test print
 void ResourceManager::Show() {
 	for(int i=0; i<job_queue.top()->mapper_num; i++) {
 		cout << job_queue.top()->is_task_working[i];
 	}
 	cout << "    " << job_queue.top()->app_name << endl;
+}
+
+CacheReplacement::CacheReplacement(int cachesize) {
+	cached_datas = new Data*[cachesize];
+	victim = -1;
+	cached_num = 0;
+}
+
+Random::Random(int cachesize) : CacheReplacement(cachesize) {
+}
+void Random::Add() {
+}
+void Random::SelectVictim() {
+
 }
 
 // Here is main :)
@@ -371,7 +427,11 @@ int main() {
 		for(int i=0; i<node_num; i++) {
 			for(int j=0; j<container_num; j++) {
 				if(!nodes[i]->GetContainer(j).GetIsWorking()) {
-					resourcemanage.DelayScheduling(namenode, nodes[i], j);
+					if(resourcemanage.IsReducePhase()) {
+						resourcemanage.ReduceTask(namenode, nodes[i], j);
+					} else {
+						resourcemanage.DelayScheduling(namenode, nodes[i], j);
+					}
 				}
 			}
 		}

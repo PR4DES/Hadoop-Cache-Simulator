@@ -1,0 +1,11 @@
+Set the number of node, size of cache, and number of container.
+Set the size of each file, if it is done then put -1
+Put inputs in this order: index of file, name of job, number of reducer, skip threshold, average time for cache local, data local, rack local, reduce.
+If it is done then put -1
+Main task start
+###################Job b is done in 15 second!!##################
+###################Job a is done in 25 second!!##################
+###################Job e is done in 39 second!!##################
+###################Job d is done in 49 second!!##################
+###################Job c is done in 59 second!!##################
+최종 종료시간은 59입니다.
