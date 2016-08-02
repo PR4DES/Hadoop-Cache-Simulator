@@ -143,7 +143,6 @@ class ResourceManager {
 		void Show();		// for test print
 		bool IsReducePhase();
 		void ReduceTask(NameNode namenode, Node* node, int countainernum);
-		void JobQueueResort();
 };
 
 // Cache Replacement class
@@ -306,23 +305,24 @@ void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 				nodes[i]->containers[j].task->completed_task_num++;
 				nodes[i]->containers[j].is_working = false;
 				nodes[i]->containers[j].task->occupied_container--; idle_container++;
-				JobQueueResort();
 			}
 		}
 	}
+
+	// check whether job is done or not
 	priority_queue<Application*, vector<Application*>, CompareApps> new_job_queue;
 	while(!job_queue.empty()) {
-		if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num + job_queue.top()->reducer_num) {
-			 cout << " ###################Job " << job_queue.top()->app_name <<" is done in " << main_time << " second!!##################\n";
-			 job_queue.pop();
-		} else {
-			new_job_queue.push(job_queue.top());
-			job_queue.pop();
-		}
+		new_job_queue.push(job_queue.top());
+		job_queue.pop();
 	}
 	while(!new_job_queue.empty()) {
-	   job_queue.push(new_job_queue.top());
-	   new_job_queue.pop();
+		if(new_job_queue.top()->completed_task_num >= new_job_queue.top()->mapper_num + new_job_queue.top()->reducer_num) {
+			cout << "Job " << new_job_queue.top()->app_name << " is done in " << main_time << " second!\n";
+			new_job_queue.pop();
+		} else {
+			job_queue.push(new_job_queue.top());
+			new_job_queue.pop();
+		}
 	}
 }
 
@@ -342,17 +342,6 @@ void ResourceManager::ReduceTask(NameNode namenode, Node* node, int containernum
 	job_queue.push(job_queue.top());
 	job_queue.pop();
 	return;
-}
-void ResourceManager::JobQueueResort() {
-	priority_queue<Application*, vector<Application*>, CompareApps> new_job_queue;
-	while(!job_queue.empty()) {
-		new_job_queue.push(job_queue.top());
-		job_queue.pop();
-	}
-	while(!new_job_queue.empty()) {
-		job_queue.push(new_job_queue.top());
-		new_job_queue.pop();
-	}
 }
 // for test print
 void ResourceManager::Show() {
@@ -431,7 +420,7 @@ int main() {
 	while(1) {
 		resourcemanage.JobCompleteManager(namenode, nodes);
 		if(resourcemanage.IsQueueEmpty()) break;
-		// scan
+
 		for(int i=0; i<node_num; i++) {
 			for(int j=0; j<container_num; j++) {
 				if(!nodes[i]->GetContainer(j).GetIsWorking()) {
@@ -454,7 +443,7 @@ int main() {
 		}
 		main_time++;
 	}
-	cout << "최종 종료시간은 " << main_time << "입니다.\n";
+	cout << "Final main time is " << main_time << " seconds.\n";
 
 	return 0;
 }
