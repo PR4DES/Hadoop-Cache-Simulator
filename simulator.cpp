@@ -18,6 +18,7 @@ class Application;
 class CacheReplacement;
 
 int main_time = 0;
+int idle_container;
 
 // Data class
 class Data {
@@ -262,7 +263,7 @@ Application::Application(int appidx, string appname, int fileidx, int reducenum,
 // Resource Manager class implementation
 void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int containernum) {
 	if(job_queue.empty()) return;
-	for(int i=0; i<job_queue.top()->mapper_num; i++) {		//job_queue.top()->mapper_num is file block size
+	for(int i=0; i<job_queue.top()->mapper_num; i++) {		// job_queue.top()->mapper_num == file block size
 		if(!job_queue.top()->is_task_working[i]) {
 			for(int j=0; j<3; j++) {
 				if(node->node_idx == namenode.files[job_queue.top()->file_idx]->GetData(i, j).GetNodePosition()) {
@@ -271,17 +272,17 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 					} else {
 						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->data_local_avg_map_time);
 					}
-					job_queue.top()->occupied_container++;
+					job_queue.top()->occupied_container++; idle_container--;
 					job_queue.top()->skip_count = 0;
 					// resort job queue
 					job_queue.push(job_queue.top());
 					job_queue.pop();
 					return;
-				} else if(job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
+			//	} else if(job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
+				} else if(job_queue.top()->skip_count >= idle_container) {
 					//Over the skip threshold
-					cout << job_queue.top()->app_name << " Skip counter is over." << main_time << endl;
 					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
-					job_queue.top()->occupied_container++;
+					job_queue.top()->occupied_container++; idle_container--;
 					job_queue.top()->skip_count = 0;
 
 					job_queue.push(job_queue.top());
@@ -291,31 +292,12 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 			}
 		}
 	}
-	//Delay scheduling
+	// Delay scheduling
 	job_queue.top()->skip_count++;
 	Application* temp = job_queue.top();
-	job_queue.pop();							//222222222222222222222222222222
+	job_queue.pop();
 	DelayScheduling(namenode, node, containernum);
 	job_queue.push(temp);
-/*	if(!job_queue.empty()) {
-	//	job_queue.pop();
-		DelayScheduling(namenode, node, containernum);
-		job_queue.push(temp);
-		return;
-	} else {
-		job_queue.push(temp);
-		for(int i=0; i<job_queue.top()->mapper_num; i++) {
-			if(!job_queue.top()->is_task_working[i]) {
-				node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
-				job_queue.top()->occupied_container++;
-				job_queue.top()->skip_count = 0;
-			
-				job_queue.push(job_queue.top());
-				job_queue.pop();
-				return;
-			}
-		}
-	}*/
 }
 void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 	for(int i=0; i<namenode.GetNodeNum(); i++) {
@@ -323,19 +305,8 @@ void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 			if(nodes[i]->containers[j].GetIsWorking() && nodes[i]->containers[j].end_time == main_time) {
 				nodes[i]->containers[j].task->completed_task_num++;
 				nodes[i]->containers[j].is_working = false;
-				// job_queue.top()->occupied_container--;
-				nodes[i]->containers[j].task->occupied_container--;
+				nodes[i]->containers[j].task->occupied_container--; idle_container++;
 				JobQueueResort();
-				//if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num + job_queue.top()->reducer_num) {
-			/*	if(nodes[i]->containers[j].task->completed_task_num >= nodes[i]->containers[j].task->mapper_num + nodes[i]->containers[j].task->reducer_num) {
-					 nodes[i]->containers[j].task->occupied_container = -100;
-					 JobQueueResort();
-					 job_queue.pop();
-					 cout << nodes[i]->containers[j].task->app_name << ", " << nodes[i]->containers[j].task->mapper_num + nodes[i]->containers[j].task->reducer_num << ", main time = " << main_time << endl;
-					if(job_queue.empty()) {
-						return;
-					}
-				}*/
 			}
 		}
 	}
@@ -353,12 +324,7 @@ void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 	   job_queue.push(new_job_queue.top());
 	   new_job_queue.pop();
 	}
-
-
-		
 }
-
-
 
 void ResourceManager::AddJob(Application *app) {
 	job_queue.push(app);
@@ -372,7 +338,7 @@ bool ResourceManager::IsReducePhase() {
 }
 void ResourceManager::ReduceTask(NameNode namenode, Node* node, int containernum) {
 	node->containers[containernum].TaskRun(job_queue.top(), -1, job_queue.top()->avg_reduce_time);
-	job_queue.top()->occupied_container++;
+	job_queue.top()->occupied_container++; idle_container--;
 	job_queue.push(job_queue.top());
 	job_queue.pop();
 	return;
@@ -418,6 +384,7 @@ int main() {
 	int node_num, cache_size, container_num;
 	cout << "Set the number of node, size of cache, and number of container.\n";
 	cin >> node_num >> cache_size >> container_num;
+	idle_container = node_num * container_num;
 
 	Node* nodes[node_num];
 	for(int i=0; i<node_num; i++) {
