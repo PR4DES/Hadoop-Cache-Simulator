@@ -3,9 +3,9 @@ Set the size of each file, if it is done then put -1
 Put inputs in this order: index of file, name of job, number of reducer, skip threshold, average time for cache local, data local, rack local, reduce.
 If it is done then put -1
 Main task start
-a, 1010, main time = 20
-e, 1515, main time = 24
-e, 1515, main time = 24
-c, 2020, main time = 27
-d, 3030, main time = 27
-최종 종료시간은 27입니다.
+Job b is done in 90 second!
+Job a is done in 110 second!
+Job e is done in 164 second!
+Job c is done in 187 second!
+Job d is done in 216 second!
+Final main time is 216 seconds.

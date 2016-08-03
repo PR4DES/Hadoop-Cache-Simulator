@@ -18,7 +18,6 @@ class Application;
 class CacheReplacement;
 
 int main_time = 0;
-int idle_container;
 
 // Data class
 class Data {
@@ -112,9 +111,9 @@ class Application {
 		int reducer_num;
 		int skip_count;
 		int skip_threshold;
-		int cache_local_avg_map_time;
-		int data_local_avg_map_time;
-		int rack_local_avg_map_time;
+		int avg_cache_time;
+		int avg_data_time;
+		int avg_rack_time;
 		int avg_reduce_time;
 		int occupied_container;
 		// when all boolean are true and completed task number is same as mapper number then this job is done.
@@ -166,8 +165,8 @@ class Random : public CacheReplacement {
 };
 
 // Data class implementation
-Data::Data() {
-	is_cached = false;
+Data::Data() { 
+	is_cached = false; 
 }
 int Data::GetDataIdx() { return data_idx; }
 int Data::GetNodePosition() { return node_position; }
@@ -188,7 +187,6 @@ File::File(int fileidx, int filesize, int nodenum) {
 		}
 	}
 }
-
 int File::GetFileIdx() { return file_idx; }
 int File::GetFileSize() { return file_size; }
 Data File::GetData(int dataidx, int order) { return datas[dataidx][order]; }
@@ -209,6 +207,7 @@ void NameNode::AddFile(File* f) {
 }
 int NameNode::GetFileNum() { return file_num; }
 int NameNode::GetNodeNum() { return node_num; }
+
 // Node class implementation
 Node::Node(int nodeidx, int cachesize, int containernum) {
 	node_idx = nodeidx;
@@ -218,10 +217,9 @@ Node::Node(int nodeidx, int cachesize, int containernum) {
 	containers = new Container[container_num];
 	cache_replace = NULL;
 }
-Container Node::GetContainer(int containeridx) {
-	return containers[containeridx];
-}
+Container Node::GetContainer(int containeridx) { return containers[containeridx]; }
 int Node::GetContSize() { return container_num; }
+
 // Container class implementation
 Container::Container() {
 	is_working = false;
@@ -238,6 +236,7 @@ void Container::TaskRun(Application *job, int tasknum, int run_time) {
 		task->is_task_working[task_idx] = true;
 	}
 }
+
 // Application class implementation
 Application::Application(int appidx, string appname, int fileidx, int reducenum, int skipthreshold,\
 		int cachetime, int datatime, int racktime, int reducetime, NameNode namenode) {
@@ -248,9 +247,9 @@ Application::Application(int appidx, string appname, int fileidx, int reducenum,
 	reducer_num = reducenum;
 	skip_count = 0;
 	skip_threshold = skipthreshold;
-	cache_local_avg_map_time = cachetime;
-	data_local_avg_map_time = datatime;
-	rack_local_avg_map_time = racktime;
+	avg_cache_time = cachetime;
+	avg_data_time = datatime;
+	avg_rack_time = racktime;
 	avg_reduce_time = reducetime;
 	occupied_container = 0;
 	is_task_working = new bool[mapper_num];
@@ -259,29 +258,33 @@ Application::Application(int appidx, string appname, int fileidx, int reducenum,
 	}
 	completed_task_num = 0;
 }
+
 // Resource Manager class implementation
 void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int containernum) {
 	if(job_queue.empty()) return;
+	if(IsReducePhase()) {
+		ReduceTask(namenode, node, containernum);
+		return;
+	}
 	for(int i=0; i<job_queue.top()->mapper_num; i++) {		// job_queue.top()->mapper_num == file block size
 		if(!job_queue.top()->is_task_working[i]) {
 			for(int j=0; j<3; j++) {
 				if(node->node_idx == namenode.files[job_queue.top()->file_idx]->GetData(i, j).GetNodePosition()) {
 					if(namenode.files[job_queue.top()->file_idx]->GetData(i,j).IsCached()) {
-						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->cache_local_avg_map_time);
+						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->avg_cache_time);
 					} else {
-						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->data_local_avg_map_time);
+						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->avg_data_time);
 					}
-					job_queue.top()->occupied_container++; idle_container--;
+					job_queue.top()->occupied_container++;
 					job_queue.top()->skip_count = 0;
 					// resort job queue
 					job_queue.push(job_queue.top());
 					job_queue.pop();
 					return;
-			//	} else if(job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
-				} else if(job_queue.top()->skip_count >= idle_container) {
+				} else if(job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
 					//Over the skip threshold
-					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->rack_local_avg_map_time);
-					job_queue.top()->occupied_container++; idle_container--;
+					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->avg_rack_time);
+					job_queue.top()->occupied_container++;
 					job_queue.top()->skip_count = 0;
 
 					job_queue.push(job_queue.top());
@@ -304,7 +307,7 @@ void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 			if(nodes[i]->containers[j].GetIsWorking() && nodes[i]->containers[j].end_time == main_time) {
 				nodes[i]->containers[j].task->completed_task_num++;
 				nodes[i]->containers[j].is_working = false;
-				nodes[i]->containers[j].task->occupied_container--; idle_container++;
+				nodes[i]->containers[j].task->occupied_container--;
 			}
 		}
 	}
@@ -329,16 +332,16 @@ void ResourceManager::JobCompleteManager(NameNode namenode, Node* nodes[]) {
 void ResourceManager::AddJob(Application *app) {
 	job_queue.push(app);
 }
-bool ResourceManager::IsQueueEmpty() {
-	return job_queue.empty();
-}
+bool ResourceManager::IsQueueEmpty() { return job_queue.empty(); }
 bool ResourceManager::IsReducePhase() {
-	if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num && job_queue.top()->completed_task_num < job_queue.top()->mapper_num + job_queue.top()->reducer_num) return true;
+	if(job_queue.top()->completed_task_num >= job_queue.top()->mapper_num && \
+	job_queue.top()->completed_task_num < job_queue.top()->mapper_num + job_queue.top()->reducer_num) 
+		return true;
 	return false;
 }
 void ResourceManager::ReduceTask(NameNode namenode, Node* node, int containernum) {
 	node->containers[containernum].TaskRun(job_queue.top(), -1, job_queue.top()->avg_reduce_time);
-	job_queue.top()->occupied_container++; idle_container--;
+	job_queue.top()->occupied_container++;
 	job_queue.push(job_queue.top());
 	job_queue.pop();
 	return;
@@ -357,12 +360,12 @@ CacheReplacement::CacheReplacement(int cachesize) {
 	cached_num = 0;
 }
 
+// Chche replacement implementation
 Random::Random(int cachesize) : CacheReplacement(cachesize) {
 }
 void Random::Add() {
 }
 void Random::SelectVictim() {
-
 }
 
 // Here is main :)
@@ -373,7 +376,6 @@ int main() {
 	int node_num, cache_size, container_num;
 	cout << "Set the number of node, size of cache, and number of container.\n";
 	cin >> node_num >> cache_size >> container_num;
-	idle_container = node_num * container_num;
 
 	Node* nodes[node_num];
 	for(int i=0; i<node_num; i++) {
@@ -383,22 +385,22 @@ int main() {
 	NameNode namenode(node_num);
 	// 2. File setting : distribute data blocks
 	int file_size;
-	int i=0;
+	int file_numbering=0;
 	cout << "Set the size of each file, if it is done then put -1\n";
 	while(1) {
 		cin >> file_size;
 		if(file_size == -1) break;
 
-		File* f = new File(i, file_size, node_num);
+		File* f = new File(file_numbering, file_size, node_num);
 		namenode.AddFile(f);
 
-		i++;
+		file_numbering++;
 	}
 	// 3. Job setting
 	ResourceManager resourcemanage;
 	int app_idx = 0;
 	string app_name;
-	int file_idx, reduce_num, skip_count, skip_threshold, cache_time, data_time, rack_time, reduce_time;
+	int file_idx, reduce_num, skip_threshold, cache_time, data_time, rack_time, reduce_time;
 	cout << "Put inputs in this order: index of file, name of job, number of reducer, skip threshold, average time for cache local, data local, rack local, reduce.\n";
 	cout << "If it is done then put -1\n";
 	while(1) {
@@ -424,8 +426,8 @@ int main() {
 		for(int i=0; i<node_num; i++) {
 			for(int j=0; j<container_num; j++) {
 				if(!nodes[i]->GetContainer(j).GetIsWorking()) {
-					if(resourcemanage.IsReducePhase()) {
-						/*
+				/*	if(resourcemanage.IsReducePhase()) {
+						
 						scheduling(
 						cont c = q.top().
 						if ( c.isReduce() 
@@ -433,11 +435,12 @@ int main() {
 						else
 							delaysched()
 							)
-							*/
+							
 						resourcemanage.ReduceTask(namenode, nodes[i], j);
 					} else {
 						resourcemanage.DelayScheduling(namenode, nodes[i], j);
-					}
+					}*/
+					resourcemanage.DelayScheduling(namenode, nodes[i], j);
 				}
 			}
 		}
