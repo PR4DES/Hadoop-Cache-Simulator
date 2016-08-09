@@ -1,0 +1,370 @@
+Set the number of node, size of cache, number of container, and replica number.
+Set the size of each file, if it is done then put -1
+2 3 1
+0 3 1
+1 3 2
+3 1 0
+3 0 1
+0 1 2
+2 3 0
+Put inputs in this order: index of file, name of job, number of reducer, skip threshold, average time for cache local, data local, rack local, reduce and submit time.
+If it is done then put -1
+Main task start
+          main time = 0
+node[0][0]
+000    job0
+Map Phase of job0
+Map Phase of job0
+1th Data, 0 flag
+node[0][1]
+000    job2
+Map Phase of job2
+Map Phase of job2
+1th Data, 0 flag
+node[1][0]
+000    job1
+Map Phase of job1
+0th Data, 1 flag
+node[1][1]
+010    job0
+Map Phase of job0
+0th Data, 1 flag
+node[2][0]
+100    job1
+Map Phase of job1
+Map Phase of job1
+2th Data, 1 flag
+node[2][1]
+010    job2
+Map Phase of job2
+0th Data, 1 flag
+node[3][0]
+110    job0
+Map Phase of job0
+Map Phase of job0
+2th Data, 3 flag
+node[3][1]
+110    job2
+Map Phase of job2
+Map Phase of job2
+2th Data, 3 flag
+          main time = 1
+          main time = 2
+          main time = 3
+          main time = 4
+          main time = 5
+          main time = 6
+          main time = 7
+          main time = 8
+          main time = 9
+          main time = 10
+node[0][0]
+101    job1
+Map Phase of job1
+1th Data, 2 flag
+node[0][1]
+111    job0
+Reduce Phase of job0
+node[1][0]
+111    job2
+Reduce Phase of job2
+node[1][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+Reduce Phase of job0
+now job queue top is job2
+node[2][0]
+111    job2
+Reduce Phase of job2
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job2
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+          main time = 11
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job2
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job2
+now job queue top is job1
+          main time = 12
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job2
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+          main time = 13
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job2
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job2
+now job queue top is job1
+          main time = 14
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job2
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+111    job0
+now job queue top is job1
+          main time = 15
+Job job2 is done in 15 second!
+Job job0 is done in 15 second!
+node[0][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+          main time = 16
+node[0][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+          main time = 17
+node[0][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+          main time = 18
+node[0][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+          main time = 19
+node[0][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[1][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[2][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][0]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+node[3][1]
+111    job1
+Map Phase of job1
+saved job is job1
+now job queue top is job1
+          main time = 20
+node[0][0]
+111    job1
+Reduce Phase of job1
+Job job1 is done in 20 second!
+node[0][1]
+node[1][0]
+node[1][1]
+node[2][0]
+node[2][1]
+node[3][0]
+node[3][1]
+          main time = 21
+Final main time is 21 seconds.
