@@ -475,6 +475,7 @@ int main() {
 			cout << "wrong input : file index is larger than number of existing file!\n";
 			continue;
 		}
+		if(reduce_time == 0) reduce_num = 0;
 		Application* app = new Application(app_idx, app_name, file_idx, reduce_num, skip_threshold, cache_time, data_time, rack_time, reduce_time, namenode, submit_time);
 		resourcemanage.AddSubmitJob(app);
 
