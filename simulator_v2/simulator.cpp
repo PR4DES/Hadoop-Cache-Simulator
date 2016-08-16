@@ -21,6 +21,8 @@ class CacheReplacement;
 
 int main_time = 0;
 
+int statistic[500];
+
 // Data class
 class Data {
 	friend class File;
@@ -313,7 +315,6 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 		if(!job_queue.top()->is_task_working[i]) {
 			for(int j=0; j<namenode.files[job_queue.top()->file_idx]->GetReplicaNum(); j++) {
 				if(node->node_idx == namenode.files[job_queue.top()->file_idx]->GetData(i, j).GetNodePosition()) {
-					//cout << "Data local of " << job_queue.top()->app_name << endl;
 					if(namenode.files[job_queue.top()->file_idx]->GetData(i,j).IsCached()) {
 						node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->avg_cache_time);
 					} else {
@@ -321,6 +322,7 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 					}
 					event_queue.push(node->containers[containernum]);
 					job_queue.top()->occupied_container++;
+					statistic[job_queue.top()->skip_count]++;
 					job_queue.top()->skip_count = 0;
 					job_queue.top()->working_map_num++;
 					if(checkFlag) job_queue.top()->flag = i+1;
@@ -329,11 +331,11 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 					job_queue.pop();
 					return;
 				} else if(j == namenode.files[job_queue.top()->file_idx]->GetReplicaNum()-1 && job_queue.top()->skip_count >= job_queue.top()->skip_threshold) {
-					//cout << "Rack local of " << job_queue.top()->app_name << endl;
 					//Over the skip threshold
 					node->containers[containernum].TaskRun(job_queue.top(), i, job_queue.top()->avg_rack_time);
 					event_queue.push(node->containers[containernum]);
 					job_queue.top()->occupied_container++;
+					statistic[job_queue.top()->skip_count]++;
 					job_queue.top()->skip_count = 0;
 					job_queue.top()->working_map_num++;
 					if(checkFlag) job_queue.top()->flag = i+1;
@@ -342,7 +344,6 @@ void ResourceManager::DelayScheduling(NameNode namenode, Node* node, int contain
 					return;
 				}
 			}
-			//cout << "Nothing : " << job_queue.top()->app_name << endl;
 			checkFlag = false;
 		}
 	}
@@ -452,7 +453,9 @@ void Random::SelectVictim() {
 // Here is main :)
 int main() {
 	srand((unsigned int)time(NULL));
-
+	for(int i=0;i<500;i++) {
+		statistic[i] = 0;
+	}
 	// 1. Node setting
 	int node_num, cache_size, container_num, replica_num;
 	cout << "Set the number of node, size of cache, number of container, and replica number.\n";
@@ -523,7 +526,6 @@ int main() {
 		//for(int i=0; i<node_num; i++) {
 		//	for(int j=0; j<container_num; j++) {
 				if(!nodes[i]->GetContainer(j).GetIsWorking()) {
-					//cout << "node[" << i << "][" << j << "]" <<  endl;
 					resourcemanage.DelayScheduling(namenode, nodes[i], j);
 				}
 			}
@@ -533,6 +535,8 @@ int main() {
 		else main_time++;
 	}
 	cout << "Final main time is " << main_time << " seconds.\n";
-
+	for(int i=0;i<500;i++) {
+		cout << statistic[i] << " ";
+	}
 	return 0;
 }
